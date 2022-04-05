@@ -5,12 +5,11 @@ V?=$(VERBOSE)
 # Change the following three variables according to your
 # local installation (or use LITEX_DIR=... LEARN_FPGA_DIR=...
 # LITEX_PLATFORM=... on the command line)
-LITEX_DIR?=/home/blevy/Programming/LiteX
-LEARN_FPGA_DIR?=/home/blevy/Programming/learn-fpga
-LITEX_PLATFORM?=radiona_ulx3s
-
-BUILD_DIR?=$(LEARN_FPGA_DIR)/LiteX/build/$(LITEX_PLATFORM)
-
+LITEX_DIR?=/home/vsuarez/
+LEARN_FPGA_DIR?=/media/vsuarez/elocaldata/SCRATCH/learn-fpga
+LITEX_PLATFORM?=digilent_arty
+SOC_DIRECTORY?=$(LITEX_DIR)/litex/litex/soc
+BUILD_DIR?=$(BUILD_DIRECTORY)
 
 include $(BUILD_DIR)/software/include/generated/variables.mak
 include $(SOC_DIRECTORY)/software/common.mak

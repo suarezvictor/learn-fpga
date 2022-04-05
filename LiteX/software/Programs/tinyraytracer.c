@@ -60,8 +60,8 @@ static inline void graphics_init(void) {
        with_fb = fb_init();
    }
    if(with_fb) {
-      graphics_width  = FB_WIDTH;
-      graphics_height = FB_HEIGHT;
+      graphics_width  = VIDEO_FRAMEBUFFER_HRES;
+      graphics_height = VIDEO_FRAMEBUFFER_VRES;
       if(small)	{
 	 graphics_width  = 320;
 	 graphics_height = 240;

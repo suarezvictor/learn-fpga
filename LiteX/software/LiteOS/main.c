@@ -67,7 +67,16 @@ static void init_framebuffer(void) {
 }
 #endif
 
-int main(int i, char **c)
+
+int upython_main(int argc, char **argv, char *stack_top_arg);
+void start_micropython(int argc, char **argv)
+{
+    int stack_dummy;
+    upython_main(argc, argv, (char*)&stack_dummy);
+}
+
+
+int main(int argc, char **argv)
 {
 	char buffer[CMD_LINE_BUFFER_SIZE];
 	char *params[MAX_PARAM];
@@ -143,6 +152,10 @@ int main(int i, char **c)
 #endif   
    
 	init_dispatcher();
+
+    start_micropython(argc, argv);
+
+
 
 	printf("--============= \e[1mConsole\e[0m ================--\n");
 #if !defined(TERM_MINI) && !defined(TERM_NO_HIST)

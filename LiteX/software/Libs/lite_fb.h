@@ -7,13 +7,15 @@
 
 #include <generated/csr.h>
 
-#define FB_WIDTH  640
-#define FB_HEIGHT 480
+#ifdef CSR_VIDEO_FRAMEBUFFER_BASE
+
+#define FB_WIDTH  VIDEO_FRAMEBUFFER_HRES
+#define FB_HEIGHT VIDEO_FRAMEBUFFER_VRES
 
 /** \brief base memory address of the framebuffer */
 extern uint32_t* fb_base;
 #define FB_PAGE1 0x40c00000
-#define FB_PAGE2 0x40d2c000
+#define FB_PAGE2 0x40e00000
 
 
 /**
@@ -180,5 +182,6 @@ void fb_set_poly_culling(PolyCulling culling);
  */ 
 void fb_fill_poly(uint32_t nb_pts, int* points, uint32_t RGB);
 
+#endif // CSR_VIDEO_FRAMEBUFFER_BASE
 
 #endif

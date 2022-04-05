@@ -15,6 +15,14 @@ void isr(void)
 	__attribute__((unused)) unsigned int irqs;
 
 	irqs = irq_pending() & irq_getmask();
+/*
+#ifdef TIMER0_INTERRUPT
+#ifndef TIMER0_POLLING
+	if(irqs & (1 << TIMER0_INTERRUPT))
+		timer0_isr();
+#endif
+#endif
+*/
 
 #ifndef UART_POLLING
 	if(irqs & (1 << UART_INTERRUPT))
@@ -23,7 +31,7 @@ void isr(void)
 }
 
 #else
-
+#error interrupt handling should be enabled
 void isr(void){};
 
 #endif

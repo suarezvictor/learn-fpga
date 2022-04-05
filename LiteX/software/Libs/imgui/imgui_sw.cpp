@@ -21,11 +21,11 @@ namespace std {
    template <class T> inline T max(T x, T y) {
       return x>y?x:y;
    }
-   
+#ifndef LEARNFPGA_LITEX
    inline float floor(float x) {
       return floorf(x);
    }
-   
+#endif   
    template <class T> inline void swap(T& x, T&y) {
       T tmp = x;
       x = y;

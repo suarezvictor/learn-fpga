@@ -6,6 +6,8 @@
 # 2) lxterm /dev/ttyUSBnnn --kernel boot.bin
 # 3) litex> reboot
 
+BUILD_DIR ?= $(BUILD_DIRECTORY)
+
 include ../makefile.inc
 
 # These ones are compiled from the sources in LiteX/litex/litex/soc/software/bios/
@@ -23,7 +25,7 @@ boot.elf: $(OBJECTS) libliteos.a
 		-N -o $@ \
 		$(OBJECTS) \
 		$(PACKAGES:%=-L$(BUILD_DIR)/software/%) \
-		$(LIBS:lib%=-l%) -L. -lliteos
+		$(LIBS:lib%=-l%) -L. -lliteos -L/media/vsuarez/elocaldata/CONFIDENTIAL/LiteX-consulting/micropython-private/ports/litex/build -lmicropython
 	chmod -x $@
 
 # Made crt0.o dependent on one of the generated files to make sure it

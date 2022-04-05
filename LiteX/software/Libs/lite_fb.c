@@ -35,6 +35,15 @@
  *          self.submodules.blitter = blitter
  *  ...
  */ 
+#ifndef CSR_VIDEO_FRAMEBUFFER_BASE
+void     fb_set_read_page(uint32_t addr) {}
+void     fb_set_write_page(uint32_t addr) {}
+int      fb_init(void) { return 0; }
+void     fb_on(void) {}
+void     fb_off(void) {}
+void     fb_clear(void) {}
+
+#else
 
 #define FB_MIN(x,y) ((x) < (y) ? (x) : (y))
 #define FB_MAX(x,y) ((x) > (y) ? (x) : (y))
@@ -456,8 +465,9 @@ static int fb_clip(int nb_pts, int** poly) {
 }
 
 void fb_fill_poly(uint32_t nb_pts, int* points, uint32_t RGB) {
-    static uint32_t x_left[FB_HEIGHT];
-    static uint32_t x_right[FB_HEIGHT];
+#warning large temp arrays are allocated on the stack (if not micropython doesn't get enough memory and raises "MemoryError")
+    /*static*/ uint32_t x_left[FB_HEIGHT];
+    /*static*/ uint32_t x_right[FB_HEIGHT];
 
     /* determine miny, maxy */
     int clockwise = 0;
@@ -604,5 +614,6 @@ void fb_fill_poly(uint32_t nb_pts, int* points, uint32_t RGB) {
 }
 
 /******************************************************************************/
+#endif // CSR_VIDEO_FRAMEBUFFER_BASE
 
 
