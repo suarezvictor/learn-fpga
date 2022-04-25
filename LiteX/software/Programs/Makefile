@@ -13,4 +13,4 @@ all: hello.elf \
 		$(PACKAGES:%=-L$(BUILD_DIR)/software/%) \
 		-L. -lliteos $(LIBS:lib%=-l%) -lbase 
 	chmod -x $@
-
+	$(OBJCOPY) -O binary $@ $@.bin

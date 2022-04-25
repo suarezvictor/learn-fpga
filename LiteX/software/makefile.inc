@@ -5,16 +5,16 @@ V?=$(VERBOSE)
 # Change the following three variables according to your
 # local installation (or use LITEX_DIR=... LEARN_FPGA_DIR=...
 # LITEX_PLATFORM=... on the command line)
-LITEX_DIR?=/home/vsuarez/
+LITEX_DIR?=/media/vsuarez/elocaldata/SCRATCH/litex
 LEARN_FPGA_DIR?=/media/vsuarez/elocaldata/SCRATCH/learn-fpga
 LITEX_PLATFORM?=digilent_arty
-SOC_DIRECTORY?=$(LITEX_DIR)/litex/litex/soc
+SOC_DIRECTORY?=$(LITEX_DIR)/litex/soc
 BUILD_DIR?=$(BUILD_DIRECTORY)
 
 include $(BUILD_DIR)/software/include/generated/variables.mak
 include $(SOC_DIRECTORY)/software/common.mak
 
-BIOS_SRC_DIR=$(LITEX_DIR)/litex/litex/soc/software/bios
+BIOS_SRC_DIR=$(LITEX_DIR)/litex/soc/software/bios
 
 # replace LiteX-provided libcompiler_rt (that misses
 # some functions, e.g. floating-point) with libgcc (that has everything)

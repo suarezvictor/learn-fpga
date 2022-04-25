@@ -27,11 +27,15 @@ int main(int argc, char **argv) {
     irq_setmask(0);
     irq_setie(1);
     uart_init();
-    printf("Micropython is booting!\n");
 
+#if 0
+    printf("Micropython is booting!\n");
     while(upython_main(argc, argv, (char*)&stack_dummy) == 0)
         /*soft_reset()*/;
-
+#else
+    printf("Hello!\n");
+    for(;;);
+#endif
     irq_setie(0);
     irq_setmask(~0);
 
