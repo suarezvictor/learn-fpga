@@ -7,8 +7,8 @@
 
 #define LED_BUILTIN 3
 #define PROFILE_NAME "LiteX"
-#define DP_P0  0
-#define DM_P0  4
+#define DP_P0  8
+#define DM_P0  9
 
 //#include "usb_host.h"
 #include <ESP32-USBSoftHost.hpp>
@@ -69,16 +69,16 @@ usb_pins_config_t USB_Pins_Config =
 };
 
 
-extern "C" void loop(void);
-extern "C" void setup(void);
+extern "C" void loop();
+extern "C" void setup();
 
-void setup(void)
+void setup()
 {
   USH.init( USB_Pins_Config, my_USB_DetectCB, my_USB_PrintCB );
   USH.setActivityBlinker(my_LedBlinkCB);
 }
 
-void loop(void)
+void loop()
 {
 #ifdef DEBUG_ALL
   static unsigned prev_count = 0;

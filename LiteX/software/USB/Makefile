@@ -9,8 +9,8 @@ CFLAGS += $(INC)
 
 all: usb_main.elf
 
-%.elf: %.o crt0.o sbrk.o usb_main.o usb.o
-	$(CC) ./crt0.o $< sbrk.o usb.o $(LDFLAGS) \
+%.elf: %.o crt0.o sbrk.o usb_main.o isr.o usb.o
+	$(CC) ./crt0.o $< sbrk.o isr.o usb.o $(LDFLAGS) \
 		-T linker.ld \
 		-N -o $@ \
 		$(PACKAGES:%=-L$(BUILD_DIR)/software/%) \

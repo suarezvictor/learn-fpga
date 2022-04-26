@@ -15,15 +15,15 @@ void setup(void);
 void /*NORETURN*/ hard_reset(void) { ctrl_reset_write(1); for(;;); } //TODO: move to SDK
 
 
-void isr(void);
-void (*isrp)(void) = isr; //tests existence
-
 int main(int argc, char **argv) {
 
     irq_setmask(0);
     irq_setie(1);
 
     uart_init();
+    //for(;;)
+    //    printf("Hello\n");
+    
     setup();
     for(;;)
       loop();
