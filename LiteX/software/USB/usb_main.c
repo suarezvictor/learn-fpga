@@ -14,6 +14,9 @@ void setup(void);
 
 void /*NORETURN*/ hard_reset(void) { ctrl_reset_write(1); for(;;); } //TODO: move to SDK
 
+void _putchar(char c) { uart_write(c); }
+
+
 
 int main(int argc, char **argv) {
 
@@ -21,9 +24,12 @@ int main(int argc, char **argv) {
     irq_setie(1);
 
     uart_init();
-    //for(;;)
-    //    printf("Hello\n");
-    
+/*
+    printf("myfloat %d %d %d %f %d %d %g %d\n", 1, 4, 5, 1.1f, -10, -11, 2.3, -12);
+    printf("myfloat %d %d %d %f %d %g %d %d\n", 1, 4, 5, 1.1f, -10, 2.3, -11, -12);
+    printf("myfloat %d %d %f %d %d %g %d\n", 4, 5, 1.1f, -10, -11, 2.3, -12);
+    printf("myfloat %d %d %f %d %g %d %d\n", 4, 5, 1.1f, -10, 2.3, -11, -12);
+  */  
     setup();
     for(;;)
       loop();
