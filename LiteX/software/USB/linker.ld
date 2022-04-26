@@ -37,11 +37,13 @@ SECTIONS
 	.data :
 	{
 		. = ALIGN(8);
+		_fdata = .;
 		*(.data .data.* .gnu.linkonce.d.*)
 		*(.data1)
 		_gp = ALIGN(16);
 		*(.sdata .sdata.* .gnu.linkonce.s.*)
 		. = ALIGN(8);
+		_edata = .;
 	} > main_ram
 
 	.bss :
@@ -62,4 +64,5 @@ SECTIONS
 
 PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);
 
-
+PROVIDE(_fdata_rom = LOADADDR(.data));
+PROVIDE(_edata_rom = LOADADDR(.data) + SIZEOF(.data));
