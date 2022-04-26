@@ -18,7 +18,7 @@ BIOS_SRC_DIR=$(LITEX_DIR)/litex/soc/software/bios
 
 # replace LiteX-provided libcompiler_rt (that misses
 # some functions, e.g. floating-point) with libgcc (that has everything)
-LIBS:=$(LIBS:libcompiler_rt=libgcc)
+LIBS:=$(LIBS:libcompiler_rt=libgcc) #this is optional when using RVfplib
 
 # Include path 
 CFLAGS:=$(CFLAGS) -I../Libs  -I$(BIOS_SRC_DIR)
