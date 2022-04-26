@@ -4,8 +4,8 @@ include ../makefile.inc
 INC += -I/media/vsuarez/elocaldata/tools/arduino-1.8.19/libraries/ESP32-USB-Soft-Host/src
 INC += -I/media/vsuarez/elocaldata/CONFIDENTIAL/LiteX-consulting/micropython-private/ports/litex
 #INC += -I$(BUILD_DIRECTORY)/software/include
-CXXFLAGS += $(INC) -Wno-missing-prototypes -march=rv32im -mabi=ilp32
-CFLAGS += $(INC) -Wno-missing-prototypes -march=rv32im -mabi=ilp32
+CXXFLAGS += $(INC) -O3 -Wno-missing-prototypes -march=rv32im -mabi=ilp32
+CFLAGS += $(INC) -O3 -Wno-missing-prototypes -march=rv32im -mabi=ilp32
 
 RVFPLIB=/media/vsuarez/elocaldata/SCRATCH/RVfplib/
 

@@ -22,7 +22,7 @@ SECTIONS
 
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 		_etext = .;
-	} > main_ram
+	} > sram AT > main_ram
 
 	.rodata :
 	{
@@ -62,7 +62,7 @@ SECTIONS
 	} > main_ram
 }
 
-PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);
+PROVIDE(_fstack = ORIGIN(sram) + LENGTH(sram));
 
 PROVIDE(_fdata_rom = LOADADDR(.data));
 PROVIDE(_edata_rom = LOADADDR(.data) + SIZEOF(.data));
