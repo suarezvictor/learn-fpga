@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LED_BUILTIN 3
+#define LED_BUILTIN 0
 #define PROFILE_NAME "LiteX"
 #define DP_P0  8
-#define DM_P0  9
+#define DM_P0  12
 
 //#include "usb_host.h"
 #include <ESP32-USBSoftHost.hpp>

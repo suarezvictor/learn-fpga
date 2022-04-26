@@ -16,9 +16,16 @@ void /*NORETURN*/ hard_reset(void) { ctrl_reset_write(1); for(;;); } //TODO: mov
 
 void _putchar(char c) { uart_write(c); }
 
-
+#include "usb_host.h"
 
 int main(int argc, char **argv) {
+    hal_gpio_set_direction(8, GPIO_MODE_OUTPUT);
+    hal_gpio_set_direction(12, GPIO_MODE_OUTPUT);
+    for(;;)
+    {
+      hal_gpio_set_level(8, 0); hal_gpio_set_level(12, 1);
+      hal_gpio_set_level(8, 1); hal_gpio_set_level(12, 0);
+    }
 
     irq_setmask(0);
     irq_setie(1);
