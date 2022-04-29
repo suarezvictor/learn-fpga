@@ -1,7 +1,7 @@
 // This file is Copyright (c) 2021 Victor Suarez Rovere <suarezvictor@gmail.com>
 // License: BSD-2-Clause
 
-#define DEBUG_ALL
+//#define DEBUG_ALL
 
 #include <stdint.h>
 #include <stdio.h>
@@ -114,7 +114,6 @@ void setup()
 void loop()
 {
 #ifdef DEBUG_ALL
-/*
   static unsigned prev_count = 0;
   if(activity_count != prev_count && received_NRZI_buffer_bytesCnt > 0)
   {
@@ -132,7 +131,6 @@ void loop()
       printf("0x%02d %d\n", pins, bit_deltat); 
     }
   }
-*/
 #endif
 
     struct USBMessage msg;
@@ -141,10 +139,11 @@ void loop()
         printDataCB( msg.src/4, 32, msg.data, msg.len );
       }
     }
-    //printState();
+    printState();
 
 
 #if !defined(TIMER_INTERVAL0_SEC)
+#warning avoid polling
   static int t = -1;
   int tnow = micros()/1000;
   if(tnow != t)
@@ -157,9 +156,10 @@ void loop()
 
 
 #if defined(TIMER_INTERVAL0_SEC)
+extern "C" void litex_timer_setup(uint32_t cycles, timer_isr_t handler);
 void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t timer_isr)
 {
-#warning implement hal_timer_setup 
+  litex_timer_setup(alarm_value, timer_isr); //fixed 1ms value for 100MHz
 }
 #endif
 

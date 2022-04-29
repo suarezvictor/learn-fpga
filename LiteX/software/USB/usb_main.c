@@ -17,23 +17,34 @@ void /*NORETURN*/ hard_reset(void) { ctrl_reset_write(1); for(;;); } //TODO: mov
 
 void _putchar(char c) { uart_write(c); }
 
-int timer_handler = 0;
+typedef void (*timer_isr_t)(void); //FIXME: redefinition
+timer_isr_t timer_handler = NULL;
 void timer0_isr(void)
 {
-  ++timer_handler;
+  timer0_ev_pending_write(timer0_ev_pending_read()); //FIXME: add to SDK
+  if(timer_handler)
+  {
+    timer_handler();
+  }
 }
-void timer_init()
-{
-   litetimer_t *tim = litetimer_instance(0);
-   litetimer_set_periodic_cycles(tim, LITETIMER_BASE_FREQUENCY*8);
-   
-   printf("before %04X\n", irq_getmask());
-   irq_setmask(irq_getmask() | (1 << TIMER0_INTERRUPT));
-   printf("interrupt mask after %04X\n", irq_getmask());
 
-   //timer0_ev_enable_write(1);
+void litex_timer_setup(uint32_t usec, timer_isr_t handler)
+{
+   timer_handler = handler;
+   litetimer_t *tim = litetimer_instance(0);
+     
+   litetimer_set_periodic_cycles(tim, litetimer_us_to_cycles(tim, usec));
+
    
+   //printf("before %04X\n", irq_getmask());
+   irq_setmask(irq_getmask() | (1 << TIMER0_INTERRUPT));
+   //printf("interrupt mask after %04X\n", irq_getmask());
+
+   timer0_ev_pending_write(timer0_ev_pending_read()); //FIXME: move to SDK
+   timer0_ev_enable_write(1); //FIXME: move to SDK
    litetimer_start(tim);
+   
+   /*
    for(;;)
    {
      static int sa  = 0;
@@ -44,7 +55,7 @@ void timer_init()
        printf("timer %d, %d ints\n", s, timer_handler);
      }
    }
-   
+   */
 }
 
 int main(int argc, char **argv) {
@@ -53,13 +64,7 @@ int main(int argc, char **argv) {
     irq_setie(1);
 
     uart_init();
-    timer_init();
-/*
-    printf("myfloat %d %d %d %f %d %d %g %d\n", 1, 4, 5, 1.1f, -10, -11, 2.3, -12);
-    printf("myfloat %d %d %d %f %d %g %d %d\n", 1, 4, 5, 1.1f, -10, 2.3, -11, -12);
-    printf("myfloat %d %d %f %d %d %g %d\n", 4, 5, 1.1f, -10, -11, 2.3, -12);
-    printf("myfloat %d %d %f %d %g %d %d\n", 4, 5, 1.1f, -10, 2.3, -11, -12);
-  */  
+
     setup();
     for(;;)
       loop();
