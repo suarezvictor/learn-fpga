@@ -1,6 +1,8 @@
 // This file is Copyright (c) 2021 Victor Suarez Rovere <suarezvictor@gmail.com>
 // License: BSD-2-Clause
 
+#define DEBUG_ALL
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -59,7 +61,7 @@ void my_LedBlinkCB(int on_off)
   if(on_off)
   {
     if(received_NRZI_buffer_bytesCnt <= 13) //this is for debugging no-data packets
-      initStates(-1,-1,-1,-1,-1,-1,-1,-1); //disable all to stop processing
+      /*initStates(-1,-1,-1,-1,-1,-1,-1,-1)*/; //disable all to stop processing
     ++activity_count;
   }
 #endif
@@ -112,6 +114,7 @@ void setup()
 void loop()
 {
 #ifdef DEBUG_ALL
+/*
   static unsigned prev_count = 0;
   if(activity_count != prev_count && received_NRZI_buffer_bytesCnt > 0)
   {
@@ -128,9 +131,8 @@ void loop()
       prev_time = (buf[i] & 0xFF);
       printf("0x%02d %d\n", pins, bit_deltat); 
     }
-    for(;;);
   }
-
+*/
 #endif
 
     struct USBMessage msg;
