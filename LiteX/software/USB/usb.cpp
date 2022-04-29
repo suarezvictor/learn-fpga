@@ -46,6 +46,11 @@ static void my_USB_PrintCB(uint8_t usbNum, uint8_t byte_depth, uint8_t* data, ui
   printf("\n");
 }
 
+#ifdef DEBUG_ALL
+extern volatile uint8_t received_NRZI_buffer_bytesCnt;
+extern uint16_t received_NRZI_buffer[];
+#endif
+
 unsigned activity_count = 0;
 void my_LedBlinkCB(int on_off)
 {
@@ -72,8 +77,34 @@ usb_pins_config_t USB_Pins_Config =
 extern "C" void loop();
 extern "C" void setup();
 
+
+#define F_USB_LOWSPEED 1500000
+#define TIMING_PREC 4
+uint32_t gpio_test(void)
+{
+    const uint32_t TRANSMIT_TIME_DELAY = ((F_CPU/1000)*TIMING_PREC)/(F_USB_LOWSPEED/1000);
+    uint8_t b = 1;
+    hal_set_differential_gpio_value(DP_P0, DM_P0, 2);
+    hal_gpio_set_direction(DP_P0, 1);
+    hal_gpio_set_direction(DM_P0, 1);
+    int k=0, td = 0, tdk=0;
+#pragma GCC unroll 0
+  for(int t1 = cpu_hal_get_cycle_count();k<13;++k) {
+    td += TRANSMIT_TIME_DELAY;
+    tdk = td/TIMING_PREC;
+    while((int)(cpu_hal_get_cycle_count() - t1) < tdk);
+    hal_set_differential_gpio_value(DP_P0, DM_P0, b);
+      b^=1;
+  }
+  return TRANSMIT_TIME_DELAY;
+}
+
 void setup()
 {
+  /*uint32_t td = gpio_test();
+  td = gpio_test();
+  printf("bit delay %u (%d cycles)\n", td, td/TIMING_PREC);
+  for(;;);*/
   USH.init( USB_Pins_Config, my_USB_DetectCB, my_USB_PrintCB );
   USH.setActivityBlinker(my_LedBlinkCB);
 }
@@ -97,7 +128,9 @@ void loop()
       prev_time = (buf[i] & 0xFF);
       printf("0x%02d %d\n", pins, bit_deltat); 
     }
+    for(;;);
   }
+
 #endif
 
     struct USBMessage msg;
@@ -106,7 +139,7 @@ void loop()
         printDataCB( msg.src/4, 32, msg.data, msg.len );
       }
     }
-    printState();
+    //printState();
 
 
 #if !defined(TIMER_INTERVAL0_SEC)

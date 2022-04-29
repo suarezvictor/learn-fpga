@@ -7,23 +7,29 @@
 #include <libbase/uart.h>
 
 void isr(void);
+void timer0_isr(void);
 
 #ifdef CONFIG_CPU_HAS_INTERRUPT
-
-void isr(void)
+void isr_handler(void) //name change to avoid conflict with default implementation FIXME: find where it is
 {
 	__attribute__((unused)) unsigned int irqs;
 
 	irqs = irq_pending() & irq_getmask();
 
-#ifndef UART_POLLING
+#if defined(UART_INTERRUPT) && !defined(UART_POLLING)
 	if(irqs & (1 << UART_INTERRUPT))
 		uart_isr();
+#endif
+#if defined(TIMER0_INTERRUPT) && !defined(TIMER0_POLLING)
+	//if(irqs & (1 << TIMER0_INTERRUPT))
+	else
+		timer0_isr();
 #endif
 }
 
 #else
 
+#error CONFIG_CPU_HAS_INTERRUPT should be enabled
 void isr(void){};
 
 #endif

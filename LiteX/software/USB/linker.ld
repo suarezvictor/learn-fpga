@@ -19,10 +19,11 @@ SECTIONS
 		*crt0*(.text)
 		KEEP(*crt0*(.text))
 		KEEP(*(.text.isr))
+		KEEP(*(.text.isr_handler))
 
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 		_etext = .;
-	} > sram AT > main_ram
+	} > main_ram
 
 	.rodata :
 	{
@@ -62,7 +63,7 @@ SECTIONS
 	} > main_ram
 }
 
-PROVIDE(_fstack = ORIGIN(sram) + LENGTH(sram));
+PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);
 
 PROVIDE(_fdata_rom = LOADADDR(.data));
 PROVIDE(_edata_rom = LOADADDR(.data) + SIZEOF(.data));
