@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+extern "C" {
+#include "lite_fb.h"
+}
 
 #define LED_BUILTIN 0
 #define PROFILE_NAME "LiteX"
@@ -103,6 +106,10 @@ uint32_t gpio_test(void)
 
 void setup()
 {
+  fb_init();
+  fb_set_dual_buffering(1);
+
+
   /*uint32_t td = gpio_test();
   td = gpio_test();
   printf("bit delay %u (%d cycles)\n", td, td/TIMING_PREC);
@@ -137,6 +144,26 @@ void loop()
     if( hal_queue_receive(usb_msg_queue, &msg) ) {
       if( printDataCB ) {
         printDataCB( msg.src/4, 32, msg.data, msg.len );
+      }
+      bool ismousepacket = (msg.len == 6); //FIXME: too hacky a way of discriminating a mouse packet (HID allows just 3 bytes as valid)
+      if(ismousepacket)
+      {
+        //packet decoding
+        uint8_t buttons = msg.data[0];
+        int8_t dx = msg.data[1];
+        int8_t dy = msg.data[2]; //FIXME: Y displacement comes with errors
+        
+        //coordinate update
+        static int x = FB_WIDTH/2, y = FB_HEIGHT/2;
+        x += dx;
+        y += dy;
+        if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
+        if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
+        printf("x %d, y %d\n", x, y);
+        
+        
+        fb_fillrect(0, 0, x, y, buttons ? 0x4080FF : 0xFF8040);
+        fb_swap_buffers();
       }
     }
     printState();
