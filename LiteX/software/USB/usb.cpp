@@ -65,7 +65,8 @@ void my_LedBlinkCB(int on_off)
   {
     if(received_NRZI_buffer_bytesCnt <= 13) //this is for debugging no-data packets
       /*initStates(-1,-1,-1,-1,-1,-1,-1,-1)*/; //disable all to stop processing
-    ++activity_count;
+    else
+      ++activity_count;
   }
 #endif
 }
@@ -107,7 +108,7 @@ uint32_t gpio_test(void)
 void setup()
 {
   fb_init();
-  fb_set_dual_buffering(1);
+  //fb_set_dual_buffering(1);
 
 
   /*uint32_t td = gpio_test();
@@ -120,6 +121,12 @@ void setup()
 
 void loop()
 {
+    struct USBMessage msg;
+    if( hal_queue_receive(usb_msg_queue, &msg) ) {
+      if( printDataCB ) {
+        //printDataCB( msg.src/4, 32, msg.data, msg.len );
+      }
+
 #ifdef DEBUG_ALL
   static unsigned prev_count = 0;
   if(activity_count != prev_count && received_NRZI_buffer_bytesCnt > 0)
@@ -135,35 +142,45 @@ void loop()
       uint8_t pins = buf[i]>>8;
       uint8_t bit_deltat = (buf[i] & 0xFF) - prev_time;
       prev_time = (buf[i] & 0xFF);
-      printf("0x%02d %d\n", pins, bit_deltat); 
+      printf("0x%02X %d\n", pins, bit_deltat); 
     }
   }
 #endif
 
-    struct USBMessage msg;
-    if( hal_queue_receive(usb_msg_queue, &msg) ) {
-      if( printDataCB ) {
-        printDataCB( msg.src/4, 32, msg.data, msg.len );
-      }
-      bool ismousepacket = (msg.len == 6); //FIXME: too hacky a way of discriminating a mouse packet (HID allows just 3 bytes as valid)
+      bool ismousepacket = (msg.len == 6); //FIXME: too hacky a way of discriminating a mouse packet (HID spec allows just 3 bytes as valid, some mouses report 20 byte packets)
+
+      static int x = FB_WIDTH/2, y = FB_HEIGHT/2;
+      static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
+      
       if(ismousepacket)
       {
-        //packet decoding
+        //packet decoding in 12-bit values (some mouses reports 8 bit values)
+        //see https://forum.pjrc.com/threads/45740-USB-Host-Mouse-Driver
         uint8_t buttons = msg.data[0];
-        int8_t dx = msg.data[1];
-        int8_t dy = msg.data[2]; //FIXME: Y displacement comes with errors
-        
+        int16_t  dx = (msg.data[2] & 0x0f) << 8 | (msg.data[1] & 0xff); dx <<= 4; dx >>= 4; //sign correction
+        int16_t  dy = (msg.data[3] & 0xff) << 4 | (msg.data[2] >> 4) & 0x0f; dy <<= 4; dy >>= 4; //sign correction
+		int16_t wheel   = (int8_t) msg.data[4];
+		        
         //coordinate update
-        static int x = FB_WIDTH/2, y = FB_HEIGHT/2;
         x += dx;
         y += dy;
         if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
         if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
-        printf("x %d, y %d\n", x, y);
+        //printf("dx %d, dy %d buttons 0x%02X wheel %d\n", dx, dy, buttons, wheel);
         
+        uint32_t color = 0;
+        //fancy color select algorithm
+        if(buttons & 1) color ^= 0x4080FF;
+        if(buttons & 2) color ^= 0x80FF40;
+        if(buttons && dy < 0) color = ~color;
         
-        fb_fillrect(0, 0, x, y, buttons ? 0x4080FF : 0xFF8040);
-        fb_swap_buffers();
+        fb_fillrect(lastx < x ? lastx : x, lasty < x ? lasty : y,
+          lastx < x ? x : lastx, lasty < y ? y : lasty,
+          color);
+
+        lastx = x; lasty = y;
+
+        //fb_swap_buffers();
       }
     }
     printState();
