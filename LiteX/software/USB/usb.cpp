@@ -2,6 +2,7 @@
 // License: BSD-2-Clause
 
 //#define DEBUG_ALL
+#define USE_IMGUI
 
 #include <stdint.h>
 #include <stdio.h>
@@ -9,6 +10,10 @@
 extern "C" {
 #include "lite_fb.h"
 }
+#ifdef USE_IMGUI
+#include "imgui.h"
+#include "imgui_sw.h"
+#endif
 
 #define LED_BUILTIN 0
 #define PROFILE_NAME "LiteX"
@@ -82,7 +87,8 @@ usb_pins_config_t USB_Pins_Config =
 
 extern "C" void loop();
 extern "C" void setup();
-
+void do_ui_update(int mousex, int mousey, int buttons, int wheel);
+void do_imgui();
 
 #define F_USB_LOWSPEED 1500000
 #define TIMING_PREC 4
@@ -108,8 +114,19 @@ uint32_t gpio_test(void)
 void setup()
 {
   fb_init();
-  //fb_set_dual_buffering(1);
+#ifdef USE_IMGUI
+  fb_set_dual_buffering(1);
 
+    printf("Initializing ImGui...\n");
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    //ImGui::GetIO().MouseDrawCursor = true; //makes things hang up
+
+    imgui_sw::bind_imgui_painting();
+    imgui_sw::make_style_fast();
+
+    printf("Starting ImGui...\n");
+#endif
 
   /*uint32_t td = gpio_test();
   td = gpio_test();
@@ -150,16 +167,15 @@ void loop()
       bool ismousepacket = (msg.len == 6); //FIXME: too hacky a way of discriminating a mouse packet (HID spec allows just 3 bytes as valid, some mouses report 20 byte packets)
 
       static int x = FB_WIDTH/2, y = FB_HEIGHT/2;
-      static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
       
       if(ismousepacket)
       {
         //packet decoding in 12-bit values (some mouses reports 8 bit values)
         //see https://forum.pjrc.com/threads/45740-USB-Host-Mouse-Driver
         uint8_t buttons = msg.data[0];
-        int16_t  dx = (msg.data[2] & 0x0f) << 8 | (msg.data[1] & 0xff); dx <<= 4; dx >>= 4; //sign correction
-        int16_t  dy = (msg.data[3] & 0xff) << 4 | (msg.data[2] >> 4) & 0x0f; dy <<= 4; dy >>= 4; //sign correction
-		int16_t wheel   = (int8_t) msg.data[4];
+        int16_t dx = ((msg.data[2] & 0x0f) << 8) | (msg.data[1] & 0xff); dx <<= 4; dx >>= 4; //sign correction
+        int16_t dy = ((msg.data[3] & 0xff) << 4) | (msg.data[2] >> 4) & 0x0f; dy <<= 4; dy >>= 4; //sign correction
+		int16_t wheel = (int8_t) msg.data[4];
 		        
         //coordinate update
         x += dx;
@@ -167,23 +183,15 @@ void loop()
         if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
         if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
         //printf("dx %d, dy %d buttons 0x%02X wheel %d\n", dx, dy, buttons, wheel);
-        
-        uint32_t color = 0;
-        //fancy color select algorithm
-        if(buttons & 1) color ^= 0x4080FF;
-        if(buttons & 2) color ^= 0x80FF40;
-        if(buttons && dy < 0) color = ~color;
-        
-        fb_fillrect(lastx < x ? lastx : x, lasty < x ? lasty : y,
-          lastx < x ? x : lastx, lasty < y ? y : lasty,
-          color);
-
-        lastx = x; lasty = y;
-
-        //fb_swap_buffers();
+ 
+        do_ui_update(x, y, buttons, wheel);
       }
     }
+
     printState();
+#ifdef USE_IMGUI
+    do_imgui();
+#endif
 
 
 #if !defined(TIMER_INTERVAL0_SEC)
@@ -203,7 +211,79 @@ void loop()
 extern "C" void litex_timer_setup(uint32_t cycles, timer_isr_t handler);
 void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t timer_isr)
 {
-  litex_timer_setup(alarm_value, timer_isr); //fixed 1ms value for 100MHz
+  litex_timer_setup(alarm_value, timer_isr);
 }
 #endif
 
+
+#ifndef USE_IMGUI
+void do_ui_update(int mousex, int mousey, int buttons, int wheel)
+{
+  static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
+  uint32_t color = 0;
+  //fancy color select algorithm
+  if(buttons & 1) color ^= 0x4080FF;
+  if(buttons & 2) color ^= 0x80FF40;
+  if(buttons && mousey < lasty) color = ~color;
+        
+  fb_fillrect(lastx < mousex ? lastx : mousex, lasty < mousey ? lasty : mousey,
+    lastx < mousex ? mousex : lastx, lasty < mousey ? mousey : lasty,
+    color);
+
+  lastx = mousex; lasty = mousey;
+}
+#else
+
+void do_ui_update(int mousex, int mousey, int buttons, int wheel)
+{
+  ImGuiIO& io = ImGui::GetIO();
+  io.MousePos = ImVec2((float)mousex, (float)mousey);
+  //printf("mouse x,y %d,%d\n", mousex, mousey);
+}
+
+void do_imgui()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    static int n = 0;
+    {
+        printf("Frame %d\n", n);
+        ++n;
+        io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
+        io.DeltaTime = 1.0f / 60.0f;
+        ImGui::NewFrame();
+
+//        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
+        ImGui::SetNextWindowSize(ImVec2(150, 100));
+        ImGui::Begin("Test");
+        ImGui::Text("X: %d", int(io.MousePos.x));       
+        ImGui::Text("Y: %d", int(io.MousePos.y));       
+        ImGui::Text("Frame: %d",n);       
+        ImGui::End();
+       
+        /*
+        //this requires floating point support in printf-like functions
+        static float f = 0.0f;
+        ImGui::Text("Hello, world!");
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        */
+
+        ImGui::Render();
+        imgui_sw::paint_imgui((uint32_t*)fb_base,VIDEO_FRAMEBUFFER_HRES,VIDEO_FRAMEBUFFER_VRES);
+        fb_swap_buffers();
+        fb_clear();
+    }
+}
+
+
+void* operator new(size_t size) {
+   void *p = ImGui::MemAlloc(size);
+   printf("operator new: 0x%p, size %d\n", p, size);
+   return p;
+}
+
+void operator delete(void *p) {
+   return ImGui::MemFree(p);
+}
+
+#endif
