@@ -111,14 +111,14 @@ extern "C" int tu_min16(uint16_t a, uint16_t b) { return a<b ? a:b;} //needed fo
 void loop()
 {
     printState();
-    int msgcount = tu_fifo_count(&usb_msg_queue);
+    /*int msgcount = tu_fifo_count(&usb_msg_queue);
     if(msgcount)
-      printf("Elements in FIFO: %d\n", msgcount);
+      printf("Elements in FIFO: %d\n", msgcount);*/
 
     struct USBMessage msg;
     while( hal_queue_receive(usb_msg_queue, &msg) ) {
       if( printDataCB ) {
-        printDataCB( msg.src/4, 32, msg.data, msg.len );
+        //printDataCB( msg.src/4, 32, msg.data, msg.len );
       }
 
 #ifdef DEBUG_ALL
@@ -181,30 +181,40 @@ void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t ti
 
 
 #ifdef USE_IMGUI
+static uint8_t justPressed = 0;
 void do_ui_update(int mousex, int mousey, int buttons, int wheel)
 {
   ImGuiIO& io = ImGui::GetIO();
   io.MousePos = ImVec2((float)mousex, (float)mousey);
-  //printf("mouse x,y %d,%d\n", mousex, mousey);
+  justPressed |= buttons;
 }
 
 void do_ui()
 {
     //return;
     ImGuiIO& io = ImGui::GetIO();
+    ImVec2 p = io.MousePos;
+    for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
+        io.MouseDown[i] = (justPressed >> i) & 1;
+    justPressed = 0;
+
     static int n = 0;
     {
-        printf("Frame %d\n", n); ++n;
+        //printf("Frame %d\n", n);
+        ++n;
         //delay(100); return;
         io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
         io.DeltaTime = 1.0f / 60.0f;
         ImGui::NewFrame();
+        ImColor linecolor = IM_COL32(255, 0, 0, 255);
 
 //        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
-        ImGui::SetNextWindowSize(ImVec2(150, 100));
+        ImGui::SetNextWindowSize(ImVec2(100, 100));
         ImGui::Begin("Test");
-        ImGui::Text("X: %d", int(io.MousePos.x));       
-        ImGui::Text("Y: %d", int(io.MousePos.y));       
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, 0), ImVec2(p.x, VIDEO_FRAMEBUFFER_VRES-1), linecolor, 1);
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(0, p.y), ImVec2(VIDEO_FRAMEBUFFER_HRES-1,p.y), linecolor, 1);
+        //ImGui::Text("X: %d", int(p.x));       
+        //ImGui::Text("Y: %d", int(p.y));       
         ImGui::Text("Frame: %d",n);       
         ImGui::End();
        
