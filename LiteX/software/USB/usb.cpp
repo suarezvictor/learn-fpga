@@ -88,60 +88,37 @@ usb_pins_config_t USB_Pins_Config =
 extern "C" void loop();
 extern "C" void setup();
 void do_ui_update(int mousex, int mousey, int buttons, int wheel);
-void do_imgui();
+void ui_init();
+void do_ui();
 
-#define F_USB_LOWSPEED 1500000
-#define TIMING_PREC 4
-uint32_t gpio_test(void)
+void delay(int ms)
 {
-    const uint32_t TRANSMIT_TIME_DELAY = ((F_CPU/1000)*TIMING_PREC)/(F_USB_LOWSPEED/1000);
-    uint8_t b = 1;
-    hal_set_differential_gpio_value(DP_P0, DM_P0, 2);
-    hal_gpio_set_direction(DP_P0, 1);
-    hal_gpio_set_direction(DM_P0, 1);
-    int k=0, td = 0, tdk=0;
-#pragma GCC unroll 0
-  for(int t1 = cpu_hal_get_cycle_count();k<13;++k) {
-    td += TRANSMIT_TIME_DELAY;
-    tdk = td/TIMING_PREC;
-    while((int)(cpu_hal_get_cycle_count() - t1) < tdk);
-    hal_set_differential_gpio_value(DP_P0, DM_P0, b);
-      b^=1;
-  }
-  return TRANSMIT_TIME_DELAY;
+ int t1 = micros() + ms*1000;
+ while(int(micros() - t1) < 0);
 }
 
 void setup()
 {
-  fb_init();
-#ifdef USE_IMGUI
-  fb_set_dual_buffering(1);
-
-    printf("Initializing ImGui...\n");
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    //ImGui::GetIO().MouseDrawCursor = true; //makes things hang up
-
-    imgui_sw::bind_imgui_painting();
-    imgui_sw::make_style_fast();
-
-    printf("Starting ImGui...\n");
-#endif
-
-  /*uint32_t td = gpio_test();
-  td = gpio_test();
-  printf("bit delay %u (%d cycles)\n", td, td/TIMING_PREC);
-  for(;;);*/
+  ui_init();
+  printf("USB init...\n");
   USH.init( USB_Pins_Config, my_USB_DetectCB, my_USB_PrintCB );
   USH.setActivityBlinker(my_LedBlinkCB);
+  printf("USB init done\n");
+ 
 }
+extern "C" int tu_min16(uint16_t a, uint16_t b) { return a<b ? a:b;} //needed for FIFOs
 
 void loop()
 {
+    printState();
+    int msgcount = tu_fifo_count(&usb_msg_queue);
+    if(msgcount)
+      printf("Elements in FIFO: %d\n", msgcount);
+
     struct USBMessage msg;
-    if( hal_queue_receive(usb_msg_queue, &msg) ) {
+    while( hal_queue_receive(usb_msg_queue, &msg) ) {
       if( printDataCB ) {
-        //printDataCB( msg.src/4, 32, msg.data, msg.len );
+        printDataCB( msg.src/4, 32, msg.data, msg.len );
       }
 
 #ifdef DEBUG_ALL
@@ -188,26 +165,13 @@ void loop()
       }
     }
 
-    printState();
-#ifdef USE_IMGUI
-    do_imgui();
-#endif
-
-
-#if !defined(TIMER_INTERVAL0_SEC)
-#warning avoid polling
-  static int t = -1;
-  int tnow = micros()/1000;
-  if(tnow != t)
-  {
-    t = tnow;
-    usb_process();
-  }
-#endif
+    do_ui();
 }
 
 
-#if defined(TIMER_INTERVAL0_SEC)
+#if !defined(TIMER_INTERVAL0_SEC)
+#error avoid polling
+#else
 extern "C" void litex_timer_setup(uint32_t cycles, timer_isr_t handler);
 void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t timer_isr)
 {
@@ -216,24 +180,7 @@ void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t ti
 #endif
 
 
-#ifndef USE_IMGUI
-void do_ui_update(int mousex, int mousey, int buttons, int wheel)
-{
-  static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
-  uint32_t color = 0;
-  //fancy color select algorithm
-  if(buttons & 1) color ^= 0x4080FF;
-  if(buttons & 2) color ^= 0x80FF40;
-  if(buttons && mousey < lasty) color = ~color;
-        
-  fb_fillrect(lastx < mousex ? lastx : mousex, lasty < mousey ? lasty : mousey,
-    lastx < mousex ? mousex : lastx, lasty < mousey ? mousey : lasty,
-    color);
-
-  lastx = mousex; lasty = mousey;
-}
-#else
-
+#ifdef USE_IMGUI
 void do_ui_update(int mousex, int mousey, int buttons, int wheel)
 {
   ImGuiIO& io = ImGui::GetIO();
@@ -241,13 +188,14 @@ void do_ui_update(int mousex, int mousey, int buttons, int wheel)
   //printf("mouse x,y %d,%d\n", mousex, mousey);
 }
 
-void do_imgui()
+void do_ui()
 {
+    //return;
     ImGuiIO& io = ImGui::GetIO();
     static int n = 0;
     {
-        printf("Frame %d\n", n);
-        ++n;
+        printf("Frame %d\n", n); ++n;
+        //delay(100); return;
         io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
         io.DeltaTime = 1.0f / 60.0f;
         ImGui::NewFrame();
@@ -275,15 +223,82 @@ void do_imgui()
     }
 }
 
+size_t alloc_total = 0;
+static void *custom_malloc(size_t size, void* user_data)
+{
+  IM_UNUSED(user_data);
+  size_t *ptr = (size_t *) malloc(size+sizeof(size_t));
+  if(!ptr) return ptr;
+  *ptr++ = size;
+  alloc_total += size;
+  printf("alloc: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
+  return ptr;
+}
+
+static void custom_free(void* ptr, void* user_data)
+{
+  IM_UNUSED(user_data);
+  if(!ptr) return;
+  size_t *ptra = (size_t*)ptr;
+  size_t size = *(--ptra);
+  alloc_total -= size;
+  printf("free: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
+  free(ptra);
+}
+
+void ui_init()
+{
+  fb_init();
+  fb_set_dual_buffering(1);
+
+    printf("Initializing ImGui...\n");
+    IMGUI_CHECKVERSION();
+    ImGui::SetAllocatorFunctions(custom_malloc, custom_free, nullptr);
+    ImGui::CreateContext();
+    //ImGui::GetIO().MouseDrawCursor = true; //makes things hang up
+
+    imgui_sw::bind_imgui_painting();
+    imgui_sw::make_style_fast();
+
+    printf("Starting ImGui...\n");
+}
 
 void* operator new(size_t size) {
    void *p = ImGui::MemAlloc(size);
-   printf("operator new: 0x%p, size %d\n", p, size);
    return p;
 }
 
 void operator delete(void *p) {
    return ImGui::MemFree(p);
+}
+#else
+void do_ui_update(int mousex, int mousey, int buttons, int wheel)
+{
+  static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
+  uint32_t color = 0;
+  //fancy color select algorithm
+  if(buttons & 1) color ^= 0x4080FF;
+  if(buttons & 2) color ^= 0x80FF40;
+  if(buttons && mousey < lasty) color = ~color;
+        
+  fb_fillrect(lastx < mousex ? lastx : mousex, lasty < mousey ? lasty : mousey,
+    lastx < mousex ? mousex : lastx, lasty < mousey ? mousey : lasty,
+    color);
+
+  lastx = mousex; lasty = mousey;
+}
+
+void do_ui()
+{
+  delay(500);
+}
+
+void ui_init()
+{
+  fb_init();
+  printf("Dummy UI init...\n");
+  delay(1000);
+  printf("Dummy UI done\n");
 }
 
 #endif
