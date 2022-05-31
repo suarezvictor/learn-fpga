@@ -100,6 +100,16 @@ void delay(int ms)
 void setup()
 {
   ui_init();
+/*
+  for(;;)
+  {
+    static uint32_t color = 0;
+    //quarter frame 25600 times: 68s/60s single/double pixel DMA (about 94FPS-106FPS full frame)
+    fb_fillrect(1, 1, FB_WIDTH/2, FB_HEIGHT/2, color);
+    color += 0x010101;
+    fb_swap_buffers();
+  }
+ */ 
   printf("USB init...\n");
   USH.init( USB_Pins_Config, my_USB_DetectCB, my_USB_PrintCB );
   USH.setActivityBlinker(my_LedBlinkCB);
@@ -118,7 +128,9 @@ void loop()
     struct USBMessage msg;
     while( hal_queue_receive(usb_msg_queue, &msg) ) {
       if( printDataCB ) {
-        //printDataCB( msg.src/4, 32, msg.data, msg.len );
+#ifndef USE_IMGUI      
+        printDataCB( msg.src/4, 32, msg.data, msg.len );
+#endif
       }
 
 #ifdef DEBUG_ALL
@@ -159,8 +171,9 @@ void loop()
         y += dy;
         if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
         if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
-        //printf("dx %d, dy %d buttons 0x%02X wheel %d\n", dx, dy, buttons, wheel);
- 
+#ifndef USE_IMGUI         
+        printf("dx %d, dy %d buttons 0x%02X wheel %d\n", dx, dy, buttons, wheel);
+#endif
         do_ui_update(x, y, buttons, wheel);
       }
     }
@@ -208,7 +221,7 @@ void do_ui()
         ImGui::NewFrame();
         ImColor linecolor = IM_COL32(255, 0, 0, 255);
 
-//        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
+        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
         ImGui::SetNextWindowSize(ImVec2(100, 100));
         ImGui::Begin("Test");
         ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, 0), ImVec2(p.x, VIDEO_FRAMEBUFFER_VRES-1), linecolor, 1);
@@ -300,7 +313,7 @@ void do_ui_update(int mousex, int mousey, int buttons, int wheel)
 
 void do_ui()
 {
-  delay(500);
+  //delay(500);
 }
 
 void ui_init()

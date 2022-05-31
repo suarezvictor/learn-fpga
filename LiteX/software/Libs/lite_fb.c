@@ -169,6 +169,9 @@ static inline int fb_hline_no_wait_dma(uint32_t* pix_start, uint32_t len, uint32
 #elif CSR_BLITTER_VALUE_SIZE == 2
      //this is an optimized implementations that allows DMA of two pixels and
      //correct the missing parts on the left and right, in a chache-aware way
+     //TODO: best implementation would be to DMA single-pixel at left part,
+     //simultaneously DMA single-pixel at right part, and also simultaneously
+     //the middle part at the widest possible bus size
 
 #ifndef CPU_CACHE_SIZE
 #define CPU_CACHE_SIZE 16 //in bytes

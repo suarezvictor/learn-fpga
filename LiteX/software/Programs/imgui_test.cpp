@@ -12,6 +12,10 @@ extern "C"
 #include "uart.h"
 }
 
+
+#if 0
+
+
 void /*NORETURN*/ hard_reset() { ctrl_reset_write(1); for(;;); } //TODO: move to SDK
 extern "C" int upython_main(int argc, char **argv, char *stack_top_arg);
 void start_micropython(int argc, char **argv)
@@ -21,9 +25,6 @@ void start_micropython(int argc, char **argv)
     while(upython_main(argc, argv, (char*)&stack_dummy) == 0)
         /*soft_reset()*/;
 }
-
-
-#if 1
 
 #ifndef LEARNFPGA_LITEX
 int main(int argc, char **argv)
@@ -105,11 +106,10 @@ extern "C" int litex_demo_main(int argc, char **argv)
     imgui_sw::bind_imgui_painting();
     imgui_sw::make_style_fast();
 
-    printf("Starting Micropython...\n");
-    start_micropython(argc, argv);
     printf("Starting ImGui...\n");
    
     int n = 0;
+    unsigned x = 0, y = 0;
 #ifndef LEARNFPGA_LITEX
     for (;;)
 #endif
@@ -126,6 +126,7 @@ extern "C" int litex_demo_main(int argc, char **argv)
         ImGui::Begin("Test");
         ImGui::Text("Hello, world!");
         ImGui::Text("Frame: %d",n);       
+        ImGui::Text("X, Y: %d, %d", x++, y--);       
         ImGui::End();
        
         
