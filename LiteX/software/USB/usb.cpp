@@ -2,7 +2,7 @@
 // License: BSD-2-Clause
 
 //#define DEBUG_ALL
-#define USE_IMGUI
+//#define USE_IMGUI
 
 #include <stdint.h>
 #include <stdio.h>
@@ -116,7 +116,6 @@ void setup()
   printf("USB init done\n");
  
 }
-extern "C" int tu_min16(uint16_t a, uint16_t b) { return a<b ? a:b;} //needed for FIFOs
 
 void loop()
 {

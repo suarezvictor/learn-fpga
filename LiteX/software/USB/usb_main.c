@@ -75,7 +75,5 @@ int main(int argc, char **argv) {
     hard_reset();
 }
 
-#include "usb_host.c"
-#include "common/tusb_fifo.c" //TinyUSB queues
 
 
