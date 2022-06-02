@@ -28,23 +28,27 @@ SECTIONS
 	{
 		. = ALIGN(8);
 		_frodata = .;
-		*(.rodata .rodata.* .gnu.linkonce.r.*)
+		*(.rodata)
+		. = ALIGN(8);
+	} > main_ram
+
+	.fast_text :
+	{
+        . = ALIGN (256);
+	    _fast_text_loadaddr = LOADADDR(.fast_text);
+		_fast_text = .;
+		/* *ESP*tusb*(.text) */
+	} > sram AT > main_ram
+
+	.sram_rodata :
+	{
+		. = ALIGN(8);
+		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
 		. = ALIGN(8);
 		_erodata = .;
-	} > main_ram
-
-	.data :
-	{
-		. = ALIGN(8);
-		_fdata = .;
-		*(EXCLUDE_FILE(*usb*.o) .data .data.* .gnu.linkonce.d.*)
-		*(EXCLUDE_FILE(*usb*.o) .data1)
-		_gp = ALIGN(16);
-		*(EXCLUDE_FILE(*usb*.o) .sdata .sdata.* .gnu.linkonce.s.*)
-		. = ALIGN(8);
-		_edata = .;
-	} > main_ram
+	} > sram AT > main_ram
+	
 
 	.bss :
 	{
@@ -59,22 +63,24 @@ SECTIONS
 		. = ALIGN(8);
 		_ebss = .;
 		_end = .;
-	} > main_ram
-	
-	
-	.fast_text :
-	{
-        . = ALIGN (256);
-	    _fast_text_loadaddr = LOADADDR(.fast_text);
-		_fast_text = .;
-		/* *ESP*tusb*(.text) */
 	} > sram AT > main_ram
+	
+
+	.data :
+	{
+		. = ALIGN(8);
+		_fdata = .;
+		*(.data .data.* .gnu.linkonce.d.*)
+		*(.data1)
+		_gp = ALIGN(16);
+		*(.sdata .sdata.* .gnu.linkonce.s.*)
+		. = ALIGN(8);
+		_edata = .;
+	} > sram AT > main_ram
+
 	
 	.fast_data : 
 	{
-	    *usb*.o(.data .data.* .gnu.linkonce.d.*)
-	    *usb*.o(.data1)
-		*usb*.o(.sdata .sdata.* .gnu.linkonce.s.*)
 		*(.fast_data)
 		_efast_text = .;
 	} > sram AT > main_ram
