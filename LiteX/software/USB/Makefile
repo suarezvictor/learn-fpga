@@ -19,7 +19,7 @@ USB_OBJECTS=$(USBHOST_DIR)/usb_host.o $(USBHOST_DIR)/common/tusb_fifo.o
 all: usb_main.elf
 
 
-%.elf: %.o crt0.o sbrk.o usb_main.o isr.o usb.o printf.o $(LEARNFPGALIB_DIR)/lite_fb.o $(IMGUI_OBJECTS) $(USB_OBJECTS)
+%.elf: %.o crt0.o sbrk.o usb_main.o isr.o usb.o printf.o $(LEARNFPGALIB_DIR)/lite_fb.o $(IMGUI_OBJECTS) $(USB_OBJECTS) linker.ld
 	$(CC)  $< ./crt0.o sbrk.o $(USB_OBJECTS) isr.o usb.o printf.o \
 	     $(LEARNFPGALIB_DIR)/lite_fb.o $(IMGUI_OBJECTS) $(LDFLAGS) \
 		-T linker.ld \

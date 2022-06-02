@@ -97,6 +97,9 @@ void delay(int ms)
  while(int(micros() - t1) < 0);
 }
 
+extern "C" USBMessage usb_msg_queue_buffer[];
+USBMessage FAST_DATA usb_msg_queue_buffer[100];
+
 void setup()
 {
   ui_init();
@@ -111,7 +114,7 @@ void setup()
   }
  */ 
   printf("USB init...\n");
-  USH.init( USB_Pins_Config, my_USB_DetectCB, my_USB_PrintCB );
+  USH.init( USB_Pins_Config, usb_msg_queue_buffer, sizeof(usb_msg_queue_buffer)/sizeof(usb_msg_queue_buffer[0]), my_USB_DetectCB, my_USB_PrintCB );
   USH.setActivityBlinker(my_LedBlinkCB);
   printf("USB init done\n");
  
@@ -220,7 +223,7 @@ void do_ui()
         ImGui::NewFrame();
         ImColor linecolor = IM_COL32(255, 0, 0, 255);
 
-        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
+        //ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
         ImGui::SetNextWindowSize(ImVec2(100, 100));
         ImGui::Begin("Test");
         ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, 0), ImVec2(p.x, VIDEO_FRAMEBUFFER_VRES-1), linecolor, 1);
@@ -253,7 +256,7 @@ static void *custom_malloc(size_t size, void* user_data)
   if(!ptr) return ptr;
   *ptr++ = size;
   alloc_total += size;
-  printf("alloc: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
+  //printf("alloc: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
   return ptr;
 }
 
@@ -264,7 +267,7 @@ static void custom_free(void* ptr, void* user_data)
   size_t *ptra = (size_t*)ptr;
   size_t size = *(--ptra);
   alloc_total -= size;
-  printf("free: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
+  //printf("free: 0x%p, size %d, total %d\n", ptr, size, alloc_total);
   free(ptra);
 }
 
@@ -321,6 +324,16 @@ void ui_init()
   printf("Dummy UI init...\n");
   delay(1000);
   printf("Dummy UI done\n");
+}
+
+
+
+void* operator new(size_t size) {
+   return malloc(size);
+}
+
+void operator delete(void *p) {
+   free(p);
 }
 
 #endif

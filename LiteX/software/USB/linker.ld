@@ -20,8 +20,7 @@ SECTIONS
 		KEEP(*crt0*(.text))
 		KEEP(*(.text.isr))
 		KEEP(*(.text.isr_handler))
-
-		*(.text .stub .text.* .gnu.linkonce.t.*)
+		*(EXCLUDE_FILE(*ESP*tusb*.o) .text .stub .text.* .gnu.linkonce.t.*)
 		_etext = .;
 	} > main_ram
 
@@ -39,10 +38,10 @@ SECTIONS
 	{
 		. = ALIGN(8);
 		_fdata = .;
-		*(.data .data.* .gnu.linkonce.d.*)
-		*(.data1)
+		*(EXCLUDE_FILE(*usb*.o) .data .data.* .gnu.linkonce.d.*)
+		*(EXCLUDE_FILE(*usb*.o) .data1)
 		_gp = ALIGN(16);
-		*(.sdata .sdata.* .gnu.linkonce.s.*)
+		*(EXCLUDE_FILE(*usb*.o) .sdata .sdata.* .gnu.linkonce.s.*)
 		. = ALIGN(8);
 		_edata = .;
 	} > main_ram
@@ -61,6 +60,25 @@ SECTIONS
 		_ebss = .;
 		_end = .;
 	} > main_ram
+	
+	
+	.fast_text :
+	{
+        . = ALIGN (256);
+	    _fast_text_loadaddr = LOADADDR(.fast_text);
+		_fast_text = .;
+		/* *ESP*tusb*(.text) */
+	} > sram AT > main_ram
+	
+	.fast_data : 
+	{
+	    *usb*.o(.data .data.* .gnu.linkonce.d.*)
+	    *usb*.o(.data1)
+		*usb*.o(.sdata .sdata.* .gnu.linkonce.s.*)
+		*(.fast_data)
+		_efast_text = .;
+	} > sram AT > main_ram
+    	
 }
 
 PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);

@@ -58,12 +58,23 @@ void litex_timer_setup(uint32_t usec, timer_isr_t handler)
    */
 }
 
+extern char _fstack[];
+extern char _fast_text[];
+extern char _efast_text[];
+extern const char _fast_text_loadaddr[];
+
 int main(int argc, char **argv) {
+    
+    char *_start = _fast_text, *_end = _efast_text, *_src = _fast_text_loadaddr;
+    size_t _size = _end - _start;
+    memcpy(_start, _src, _size); //void *memcpy(void *dest, const void * src, size_t n)
 
     irq_setmask(0);
     irq_setie(1);
 
     uart_init();
+    printf("start 0x%p, end 0x%p (size 0x%X), from 0x%p, stack 0x%p\n", _start, _end, _size, _src, _fstack);
+
 
     setup();
     for(;;)
