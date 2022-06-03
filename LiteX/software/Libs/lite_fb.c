@@ -515,7 +515,7 @@ static int fb_clip(int nb_pts, int** poly) {
 }
 
 void fb_fill_poly(uint32_t nb_pts, int* points, uint32_t RGB) {
-#warning large temp arrays are allocated on the stack (if not micropython doesn't get enough memory and raises "MemoryError")
+#warning large temp arrays are allocated on the stack (if not micropython does not get enough memory and raises "MemoryError")
     /*static*/ uint32_t x_left[FB_HEIGHT];
     /*static*/ uint32_t x_right[FB_HEIGHT];
 

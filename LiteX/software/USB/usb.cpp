@@ -1,6 +1,9 @@
 // This file is Copyright (c) 2021 Victor Suarez Rovere <suarezvictor@gmail.com>
 // License: BSD-2-Clause
 
+//Current command for SoC generation:
+//$ digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=3000000 --with-pmod-gpio --integrated-sram-size 32768 --build
+
 //#define DEBUG_ALL
 #define USE_IMGUI
 
@@ -98,7 +101,7 @@ void delay(int ms)
 }
 
 extern "C" USBMessage usb_msg_queue_buffer[];
-USBMessage /*FAST_DATA*/ usb_msg_queue_buffer[100]; //NOTE: too much data makes things slowers!
+USBMessage FAST_DATA usb_msg_queue_buffer[100]; //NOTE: too much data makes things slowers!
 
 void setup()
 {
@@ -165,14 +168,16 @@ void loop()
         //see https://forum.pjrc.com/threads/45740-USB-Host-Mouse-Driver
         uint8_t buttons = msg.data[0];
         int16_t dx = ((msg.data[2] & 0x0f) << 8) | (msg.data[1] & 0xff); dx <<= 4; dx >>= 4; //sign correction
-        int16_t dy = ((msg.data[3] & 0xff) << 4) | (msg.data[2] >> 4) & 0x0f; dy <<= 4; dy >>= 4; //sign correction
+        int16_t dy = ((msg.data[3] & 0xff) << 4) | ((msg.data[2] >> 4) & 0x0f); dy <<= 4; dy >>= 4; //sign correction
 		int16_t wheel = (int8_t) msg.data[4];
 		        
         //coordinate update
         x += dx;
         y += dy;
-        if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
-        if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
+        if(x < 0) x = 0;
+        if(x >= FB_WIDTH) x = FB_WIDTH-1; 
+        if(y < 0) y = 0;
+        if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
 #if 1//ndef USE_IMGUI         
         printf("x %d, y %d, dx %d, dy %d buttons 0x%02X wheel %d\n", x, y, dx, dy, buttons, wheel);
 #endif
@@ -208,33 +213,28 @@ void do_ui_update(int mousex, int mousey, int buttons, int wheel)
 
 void do_ui()
 {
-    //return;
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 p = io.MousePos;
+    int mousex = int(p.x), mousey = int(p.y);
     for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
         io.MouseDown[i] = (justPressed >> i) & 1;
     justPressed = 0;
 
     static int n = 0;
     {
-        //printf("Frame %d\n", n);
         ++n;
-        //delay(100); return;
         io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
         io.DeltaTime = 1.0f / 60.0f;
         ImGui::NewFrame();
-        ImColor linecolor = IM_COL32(255, 0, 0, 255);
-
-        //ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
+#if 0
+        ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
+#else       
         ImGui::SetNextWindowSize(ImVec2(100, 100));
+        ImColor linecolor = IM_COL32(255, 0, 0, 255);
         ImGui::Begin("Test");
-        ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, 0), ImVec2(p.x, VIDEO_FRAMEBUFFER_VRES-1), linecolor, 1);
-        ImGui::GetWindowDrawList()->AddLine(ImVec2(0, p.y), ImVec2(VIDEO_FRAMEBUFFER_HRES-1,p.y), linecolor, 1);
-        //ImGui::Text("X: %d", int(p.x));       
-        //ImGui::Text("Y: %d", int(p.y));       
         ImGui::Text("Frame: %d",n);       
         ImGui::End();
-       
+#endif
         /*
         //this requires floating point support in printf-like functions
         static float f = 0.0f;
@@ -245,6 +245,12 @@ void do_ui()
 
         ImGui::Render();
         imgui_sw::paint_imgui((uint32_t*)fb_base,VIDEO_FRAMEBUFFER_HRES,VIDEO_FRAMEBUFFER_VRES);
+
+        //draw the mouse pointer as a cross
+        fb_set_cliprect(0, 0, VIDEO_FRAMEBUFFER_HRES-1, VIDEO_FRAMEBUFFER_VRES-1);
+        fb_line(mousex-5, mousey, mousex+6, mousey, 0x00FF00);
+        fb_line(mousex, mousey-5, mousex, mousey+6, 0x00FF00);
+
         fb_swap_buffers();
         fb_clear();
     }

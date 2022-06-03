@@ -1,6 +1,1 @@
-MEMORY {
-	rom : ORIGIN = 0x00000000, LENGTH = 0x00020000
-	sram : ORIGIN = 0x10000000, LENGTH = 0x00010000
-	main_ram : ORIGIN = 0x40000000, LENGTH = 0x10000000
-	csr : ORIGIN = 0xf0000000, LENGTH = 0x00010000
-}
+INCLUDE /media/vsuarez/elocaldata/SCRATCH/litex/litex-boards/litex_boards/targets/build/digilent_arty/software/include/generated/regions.ld

@@ -3,10 +3,6 @@ ENTRY(_start)
 
 __DYNAMIC = 0;
 
-/* 
- * We include our own 'regions.ld', with main_ram that starts 256 KB
- * later (the first 256 KBs are kept fo the OS).
- */
 INCLUDE regions.ld
 
 SECTIONS
@@ -84,7 +80,7 @@ SECTIONS
 
 }
 
-PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);
+PROVIDE(_fstack = ORIGIN(sram) + LENGTH(sram) - 4);
 
 PROVIDE(_fdata_rom = LOADADDR(.data));
 PROVIDE(_edata_rom = LOADADDR(.data) + SIZEOF(.data));
