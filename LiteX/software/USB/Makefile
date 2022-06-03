@@ -18,7 +18,7 @@ USB_OBJECTS=$(USBHOST_DIR)/usb_host.o $(USBHOST_DIR)/common/tusb_fifo.o
 
 all: usb_main.elf
 
-
+#lto flag added to allow sources with mixed -flto or -fno-lto (link time) optimizations settings
 %.elf: %.o crt0.o sbrk.o usb_main.o isr.o usb.o printf.o $(LEARNFPGALIB_DIR)/lite_fb.o $(IMGUI_OBJECTS) $(USB_OBJECTS) linker.ld
 	$(CC)  $< ./crt0.o sbrk.o $(USB_OBJECTS) isr.o usb.o printf.o \
 	     $(LEARNFPGALIB_DIR)/lite_fb.o $(IMGUI_OBJECTS) $(LDFLAGS) \
@@ -26,6 +26,7 @@ all: usb_main.elf
 		-Xlinker -Map=$@.map \
 		-N -o $@ \
 		$(PACKAGES:%=-L$(BUILD_DIR)/software/%) \
+		-flto \
 		-L. $(LIBS:lib%=-l%) -L$(RVFPLIB)/build/lib -lrvfp
 	chmod -x $@
 	$(OBJCOPY) -O binary $@ $@.bin

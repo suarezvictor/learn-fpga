@@ -62,6 +62,15 @@ extern char _fstack[];
 extern char _fast_text[];
 extern char _efast_text[];
 extern const char _fast_text_loadaddr[];
+extern char _fast_data[];
+extern char _efast_data[];
+extern const char _fast_data_loadaddr[];
+/*
+extern char _fdata[];
+extern char _edata[];
+extern const char _fdata_rom[];*/
+extern int timer0_isr_count, uart_isr_count;
+void isr_handler(void);
 
 int main(int argc, char **argv) {
     
@@ -69,14 +78,21 @@ int main(int argc, char **argv) {
     size_t _size = _end - _start;
     memcpy(_start, _src, _size); //void *memcpy(void *dest, const void * src, size_t n)
 
+    char *d_start = _fast_data, *d_end = _efast_data, *d_src = _fast_data_loadaddr;
+    size_t d_size = d_end - d_start;
+    memcpy(d_start, d_src, d_size); //void *memcpy(void *dest, const void * src, size_t n)
+
     irq_setmask(0);
     irq_setie(1);
 
     uart_init();
-    printf("start 0x%p, end 0x%p (size 0x%X), from 0x%p, stack 0x%p\n", _start, _end, _size, _src, _fstack);
-
-
+    //printf("start 0x%p = 0x%08X, src 0x%p = 0x%08X\n", _start, *(int *) _start, _src, *(int *) _src);
+    printf("text start 0x%p, end 0x%p (size 0x%X), from 0x%p\n", _start, _end, _size, _src);
+    printf("data start 0x%p, end 0x%p (size 0x%X), from 0x%p, stack 0x%p\n", d_start, d_end, d_size, d_src, _fstack);
+    //printf("fdata start 0x%p, end 0x%p (size 0x%X), from 0x%p\n", _fdata, _edata, _edata-_fdata, _fdata_rom);
     setup();
+    printf("interrupt handler 0x%p, timer0 count:%d, uart count:%d\n", isr_handler, timer0_isr_count, uart_isr_count);
+
     for(;;)
       loop();
 

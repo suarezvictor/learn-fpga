@@ -18,9 +18,7 @@ SECTIONS
 		/* don't get disposed of by greedy optimisation */
 		*crt0*(.text)
 		KEEP(*crt0*(.text))
-		KEEP(*(.text.isr))
-		KEEP(*(.text.isr_handler))
-		*(EXCLUDE_FILE(*ESP*tusb*.o) .text .stub .text.* .gnu.linkonce.t.*)
+		*(.text .stub .text.* .gnu.linkonce.t.* .gnu.*lto*)
 		_etext = .;
 	} > main_ram
 
@@ -29,28 +27,47 @@ SECTIONS
 		. = ALIGN(8);
 		_frodata = .;
 		*(.rodata)
-		. = ALIGN(8);
-	} > main_ram
-
-	.fast_text :
-	{
-        . = ALIGN (256);
-	    _fast_text_loadaddr = LOADADDR(.fast_text);
-		_fast_text = .;
-		/* *ESP*tusb*(.text) */
-	} > sram AT > main_ram
-
-	.sram_rodata :
-	{
-		. = ALIGN(8);
 		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
 		. = ALIGN(8);
 		_erodata = .;
+	} > main_ram
+
+
+	.data :
+	{
+		. = ALIGN(8);
+		/* _fdata = .; */
+		*(.data .data.* .gnu.linkonce.d.*)
+		*(.data1)
+		/* _gp = ALIGN(16); */
+		*(.sdata .sdata.* .gnu.linkonce.s.*)
+		. = ALIGN(8);
+		/* _edata = .; */
+	} > main_ram
+
+
+	.fast_text : 
+	{
+        . = ALIGN (8);
+	    _fast_text_loadaddr = LOADADDR(.fast_text);
+		_fast_text = .;
+		*(.fast_text)
+        . = ALIGN (8);
+		_efast_text = .;
 	} > sram AT > main_ram
 	
+	.fast_data : 
+	{
+        . = ALIGN (8);
+	    _fast_data_loadaddr = LOADADDR(.fast_data);
+		_fast_data = .;
+		*(.fast_data)
+		_efast_data = .;
+	}  > sram AT > main_ram
+	
 
-	.bss :
+	.bss : /* NOTE: this includes _end, so it must come at the end for correct malloc */
 	{
 		. = ALIGN(8);
 		_fbss = .;
@@ -63,28 +80,8 @@ SECTIONS
 		. = ALIGN(8);
 		_ebss = .;
 		_end = .;
-	} > sram AT > main_ram
-	
+	} > main_ram
 
-	.data :
-	{
-		. = ALIGN(8);
-		_fdata = .;
-		*(.data .data.* .gnu.linkonce.d.*)
-		*(.data1)
-		_gp = ALIGN(16);
-		*(.sdata .sdata.* .gnu.linkonce.s.*)
-		. = ALIGN(8);
-		_edata = .;
-	} > sram AT > main_ram
-
-	
-	.fast_data : 
-	{
-		*(.fast_data)
-		_efast_text = .;
-	} > sram AT > main_ram
-    	
 }
 
 PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);

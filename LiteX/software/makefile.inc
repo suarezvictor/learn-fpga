@@ -44,6 +44,12 @@ COMMONFLAGS:=$(COMMONFLAGS:-fexceptions=)
 CFLAGS:=$(CFLAGS:-fexceptions=-fno-exceptions)
 CXXFLAGS:=$(CXXFLAGS:-fexceptions=-fno-exceptions)
 
+#disable lto
+#COMMONFLAGS:=$(COMMONFLAGS:-flto=-fno-lto)
+#CFLAGS:=$(CFLAGS:-flto=-fno-lto) #this alone prevents USB host test to run ok
+#CXXFLAGS:=$(CXXFLAGS:-flto=-fno-lto)
+
+
 # Compiled from the sources in libs/
 LIB_OBJECTS=lite_oled.o lite_fb.o lite_elf.o lite_stdio.o\
             imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui_sw.o 

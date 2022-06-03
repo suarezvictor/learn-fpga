@@ -2,7 +2,7 @@
 // License: BSD-2-Clause
 
 //#define DEBUG_ALL
-//#define USE_IMGUI
+#define USE_IMGUI
 
 #include <stdint.h>
 #include <stdio.h>
@@ -98,7 +98,7 @@ void delay(int ms)
 }
 
 extern "C" USBMessage usb_msg_queue_buffer[];
-USBMessage FAST_DATA usb_msg_queue_buffer[100];
+USBMessage /*FAST_DATA*/ usb_msg_queue_buffer[100]; //NOTE: too much data makes things slowers!
 
 void setup()
 {
@@ -115,9 +115,9 @@ void setup()
  */ 
   printf("USB init...\n");
   USH.init( USB_Pins_Config, usb_msg_queue_buffer, sizeof(usb_msg_queue_buffer)/sizeof(usb_msg_queue_buffer[0]), my_USB_DetectCB, my_USB_PrintCB );
-  USH.setActivityBlinker(my_LedBlinkCB);
   printf("USB init done\n");
- 
+  USH.setActivityBlinker(my_LedBlinkCB);
+  printf("setup done\n");
 }
 
 void loop()
@@ -130,7 +130,7 @@ void loop()
     struct USBMessage msg;
     while( hal_queue_receive(usb_msg_queue, &msg) ) {
       if( printDataCB ) {
-#ifndef USE_IMGUI      
+#if 1//ndef USE_IMGUI      
         printDataCB( msg.src/4, 32, msg.data, msg.len );
 #endif
       }
@@ -173,8 +173,8 @@ void loop()
         y += dy;
         if(x < 0) x = 0; if(x >= FB_WIDTH) x = FB_WIDTH-1; 
         if(y < 0) y = 0; if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
-#ifndef USE_IMGUI         
-        printf("dx %d, dy %d buttons 0x%02X wheel %d\n", dx, dy, buttons, wheel);
+#if 1//ndef USE_IMGUI         
+        printf("x %d, y %d, dx %d, dy %d buttons 0x%02X wheel %d\n", x, y, dx, dy, buttons, wheel);
 #endif
         do_ui_update(x, y, buttons, wheel);
       }
@@ -190,7 +190,9 @@ void loop()
 extern "C" void litex_timer_setup(uint32_t cycles, timer_isr_t handler);
 void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t timer_isr)
 {
+  printf("in hal_timer_setup at 0x%p\n", hal_timer_setup);
   litex_timer_setup(alarm_value, timer_isr);
+  //delay(50); //DEBUG ONLY: make room to generate some interrupts
 }
 #endif
 

@@ -166,6 +166,7 @@ static inline int fb_hline_no_wait_dma(uint32_t* pix_start, uint32_t len, uint32
     blitter_dma_writer_length_write(len*4);
     blitter_value_write(RGB);
     blitter_dma_writer_enable_write(1);
+    return 1;
 #elif CSR_BLITTER_VALUE_SIZE == 2
      //this is an optimized implementations that allows DMA of two pixels and
      //correct the missing parts on the left and right, in a chache-aware way
@@ -216,7 +217,7 @@ static inline int fb_hline_no_wait_dma(uint32_t* pix_start, uint32_t len, uint32
 	*pix_start = RGB;
 	++pix_start;
     }
-    return true;
+    return 1;
 #endif    
 }
 
