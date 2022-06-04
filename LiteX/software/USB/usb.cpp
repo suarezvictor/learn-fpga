@@ -2,7 +2,7 @@
 // License: BSD-2-Clause
 
 //Current command for SoC generation:
-//$ digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=3000000 --with-pmod-gpio --integrated-sram-size 32768 --build
+//$ digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=3000000 --with-pmod-gpio --integrated-sram-size 32768 --cpu-variant=full --build
 
 //#define DEBUG_ALL
 #define USE_IMGUI
@@ -90,7 +90,7 @@ usb_pins_config_t USB_Pins_Config =
 
 extern "C" void loop();
 extern "C" void setup();
-void do_ui_update(int mousex, int mousey, int buttons, int wheel);
+bool do_ui_update(int mousex, int mousey, int buttons, int wheel);
 void ui_init();
 void do_ui();
 
@@ -122,6 +122,8 @@ void setup()
   USH.setActivityBlinker(my_LedBlinkCB);
   printf("setup done\n");
 }
+
+int mousewheel = 0; 
 
 void loop()
 {
@@ -174,18 +176,23 @@ void loop()
         //coordinate update
         x += dx;
         y += dy;
+        mousewheel += wheel;
         if(x < 0) x = 0;
         if(x >= FB_WIDTH) x = FB_WIDTH-1; 
         if(y < 0) y = 0;
         if(y >= FB_HEIGHT) y = FB_HEIGHT-1;
+        if(do_ui_update(x, y, buttons, mousewheel))
+        {
 #if 1//ndef USE_IMGUI         
-        printf("x %d, y %d, dx %d, dy %d buttons 0x%02X wheel %d\n", x, y, dx, dy, buttons, wheel);
+          printf("x %d (%+d), y %d (%+d), dy %d buttons 0x%02X wheel %d (%+d)\n", x, dx, y, dy, buttons, mousewheel, wheel);
 #endif
-        do_ui_update(x, y, buttons, wheel);
+          break;
+        }
       }
     }
 
     do_ui();
+    mousewheel = 0; 
 }
 
 
@@ -203,45 +210,55 @@ void hal_timer_setup(timer_idx_t timer_num, uint32_t alarm_value, timer_isr_t ti
 
 
 #ifdef USE_IMGUI
-static uint8_t justPressed = 0;
-void do_ui_update(int mousex, int mousey, int buttons, int wheel)
+uint8_t mousebuttons = 0;
+bool do_ui_update(int mousex, int mousey, int buttons, int wheel)
 {
   ImGuiIO& io = ImGui::GetIO();
   io.MousePos = ImVec2((float)mousex, (float)mousey);
-  justPressed |= buttons;
+  //mousebuttons |= buttons; //this is for auto release
+  if(mousebuttons != buttons)
+  {
+    mousebuttons = buttons;
+    return true; //notify on change
+  }
+  return false;
 }
 
 void do_ui()
 {
     ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
     ImVec2 p = io.MousePos;
     int mousex = int(p.x), mousey = int(p.y);
     for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
-        io.MouseDown[i] = (justPressed >> i) & 1;
-    justPressed = 0;
+        io.MouseDown[i] = (mousebuttons >> i) & 1;
+    io.MouseWheel = mousewheel;
+    mousewheel = 0;
 
     static int n = 0;
     {
-        ++n;
-        io.DisplaySize = ImVec2(VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
-        io.DeltaTime = 1.0f / 60.0f;
+        static uint64_t t0 = micros();
+        uint64_t t1 = micros();
+        io.DeltaTime = (t1-t0)*1e-6;
+        t0 = t1;
+        
         ImGui::NewFrame();
-#if 0
+#if 1
         ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
 #else       
         ImGui::SetNextWindowSize(ImVec2(100, 100));
-        ImColor linecolor = IM_COL32(255, 0, 0, 255);
         ImGui::Begin("Test");
-        ImGui::Text("Frame: %d",n);       
+        ImGui::Text("Frame: %d\n", n); 
+        ImGui::Text("FPS: %d", int(io.Framerate)); 
+        ++n;     
         ImGui::End();
 #endif
-        /*
+/*
         //this requires floating point support in printf-like functions
         static float f = 0.0f;
-        ImGui::Text("Hello, world!");
+        ImGui::Text("Application average %d ms/frame (%d FPS)", int(1000.0 / io.Framerate), int(io.Framerate));
         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        */
+*/      
 
         ImGui::Render();
         imgui_sw::paint_imgui((uint32_t*)fb_base,VIDEO_FRAMEBUFFER_HRES,VIDEO_FRAMEBUFFER_VRES);
@@ -252,6 +269,7 @@ void do_ui()
         fb_line(mousex, mousey-5, mousex, mousey+6, 0x00FF00);
 
         fb_swap_buffers();
+        //fb_fillrect(10, 10, VIDEO_FRAMEBUFFER_HRES-10, VIDEO_FRAMEBUFFER_VRES-10, 0x804040);
         fb_clear();
     }
 }
@@ -305,7 +323,7 @@ void operator delete(void *p) {
    return ImGui::MemFree(p);
 }
 #else
-void do_ui_update(int mousex, int mousey, int buttons, int wheel)
+bool do_ui_update(int mousex, int mousey, int buttons, int wheel)
 {
   static int lastx = FB_WIDTH/2, lasty = FB_HEIGHT/2;
   uint32_t color = 0;
@@ -319,6 +337,7 @@ void do_ui_update(int mousex, int mousey, int buttons, int wheel)
     color);
 
   lastx = mousex; lasty = mousey;
+  return true; //process all mouse events
 }
 
 void do_ui()
