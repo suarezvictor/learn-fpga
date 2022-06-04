@@ -8,8 +8,6 @@
 #include "osal/osal.h"
 
 void timer0_isr(void);
-int FAST_DATA timer0_isr_count = 0;
-int FAST_DATA uart_isr_count = 0;
 
 #ifdef CONFIG_CPU_HAS_INTERRUPT
 void FAST_CODE isr_handler(void) //name change to avoid conflict with default implementation FIXME: find where it is
@@ -22,14 +20,12 @@ void FAST_CODE isr_handler(void) //name change to avoid conflict with default im
 	if(irqs & (1 << UART_INTERRUPT))
 	{
 		uart_isr();
-	    ++uart_isr_count;
 	}
 #endif
 #if defined(TIMER0_INTERRUPT) && !defined(TIMER0_POLLING)
 	if(irqs & (1 << TIMER0_INTERRUPT))
 	{
 		timer0_isr();
-	    ++timer0_isr_count;
 	}
 #endif
 }

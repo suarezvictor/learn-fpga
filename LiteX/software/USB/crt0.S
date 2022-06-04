@@ -59,19 +59,18 @@ crt_init:
   la a0, trap_entry
   csrw mtvec, a0
 
-//not needed when source and destination is the same
-//data_init:
-//  la a0, _fdata
-//  la a1, _edata
-//  la a2, _fdata_rom
-//data_loop:
-//  beq a0,a1,data_done
-//  lw a3,0(a2)
-//  sw a3,0(a0)
-//  add a0,a0,4
-//  add a2,a2,4
-//  j data_loop
-//data_done:
+data_init:
+  la a0, _fast_data
+  la a1, _efast_data
+  la a2, _fast_data_loadaddr
+data_loop:
+  beq a0,a1,data_done
+  lw a3,0(a2)
+  sw a3,0(a0)
+  add a0,a0,4
+  add a2,a2,4
+  j data_loop
+data_done:
 
 bss_init:
   la a0, _fbss
@@ -82,6 +81,19 @@ bss_loop:
   add a0,a0,4
   j bss_loop
 bss_done:
+
+fastcode_init:
+  la a0, _fast_text
+  la a1, _efast_text
+  la a2, _fast_text_loadaddr
+fastcode_loop:
+  beq a0,a1,fastcode_done
+  lw a3,0(a2)
+  sw a3,0(a0)
+  add a0,a0,4
+  add a2,a2,4
+  j fastcode_loop
+fastcode_done:
 
   li a0, 0x880  //880 enable timer + external interrupt sources (until mstatus.MIE is set, they will never trigger an interrupt)
   csrw mie,a0
