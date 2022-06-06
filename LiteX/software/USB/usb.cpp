@@ -2,7 +2,9 @@
 // License: BSD-2-Clause
 
 //Current command for SoC generation:
-//$ digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=3000000 --with-pmod-gpio --integrated-sram-size 32768 --cpu-variant=full --build
+//$ ./digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=3000000 --with-pmod-gpio --integrated-sram-size 32768 --sys-clk-freq=200e6 --cpu-variant=full --build
+//for DVI 800x600@50Hz: 
+//$ ./digilent_arty.VIDEO.py --timer-uptime --uart-baudrate=1000000 --with-pmod-gpio --integrated-sram-size 32768 --sys-clk-freq=166666666 --cpu-type=vexriscv --cpu-variant=full --build
 
 //#define DEBUG_ALL
 #define USE_IMGUI
@@ -243,22 +245,20 @@ void do_ui()
         t0 = t1;
         
         ImGui::NewFrame();
-#if 1
+        static int color_r = 0, color_g = 0, color_b = 0;
+#if 0
         ImGui::ShowDemoWindow(NULL); //this makes mouse to stop working
-#else       
-        ImGui::SetNextWindowSize(ImVec2(100, 100));
-        ImGui::Begin("Test");
-        ImGui::Text("Frame: %d\n", n); 
-        ImGui::Text("FPS: %d", int(io.Framerate)); 
-        ++n;     
+#else
+        ImGui::SetNextWindowSize(ImVec2(180, 100));
+        ImGui::Begin("Color");
+        ImGui::SliderInt("R", &color_r, 0, 255);
+        ImGui::SliderInt("G", &color_g, 0, 255);
+        ImGui::SliderInt("B", &color_b, 0, 255);
+        ImGui::End();
+        ImGui::Begin("FPS");
+        ImGui::Text("%d", int(io.Framerate)); 
         ImGui::End();
 #endif
-/*
-        //this requires floating point support in printf-like functions
-        static float f = 0.0f;
-        ImGui::Text("Application average %d ms/frame (%d FPS)", int(1000.0 / io.Framerate), int(io.Framerate));
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-*/      
 
         ImGui::Render();
         imgui_sw::paint_imgui((uint32_t*)fb_base,VIDEO_FRAMEBUFFER_HRES,VIDEO_FRAMEBUFFER_VRES);
@@ -269,8 +269,8 @@ void do_ui()
         fb_line(mousex, mousey-5, mousex, mousey+6, 0x00FF00);
 
         fb_swap_buffers();
-        //fb_fillrect(10, 10, VIDEO_FRAMEBUFFER_HRES-10, VIDEO_FRAMEBUFFER_VRES-10, 0x804040);
-        fb_clear();
+        fb_fillrect(10, 10, VIDEO_FRAMEBUFFER_HRES-10, VIDEO_FRAMEBUFFER_VRES-10, color_b | (color_g <<8 ) | (color_r << 16));
+        //fb_clear();
     }
 }
 
@@ -302,7 +302,7 @@ void ui_init()
   fb_init();
   fb_set_dual_buffering(1);
 
-    printf("Initializing ImGui...\n");
+    printf("Initializing ImGui at %dx%d...\n", VIDEO_FRAMEBUFFER_HRES, VIDEO_FRAMEBUFFER_VRES);
     IMGUI_CHECKVERSION();
     ImGui::SetAllocatorFunctions(custom_malloc, custom_free, nullptr);
     ImGui::CreateContext();
